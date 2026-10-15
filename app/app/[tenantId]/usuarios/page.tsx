@@ -21,15 +21,18 @@ export default async function UsersPage({ params }: { params: Promise<{ tenantId
   ]);
 
   // Agrupa roles por usuario
-  const byUser = new Map<string, { id: string; email: string; name: string | null; roles: string[]; active: boolean; warehouses: string[] }>();
+  type Member = { id: string; email: string; name: string | null; roles: string[]; active: boolean; warehouses: string[] };
+  const byUser = new Map<string, Member>();
   for (const m of rows(mRes.data)) {
-    const u = byUser.get(m.user_id) ?? { id: m.user_id, email: m.profiles?.email ?? '', name: m.profiles?.full_name ?? null, roles: [], active: false, warehouses: [] };
+    const u: Member = byUser.get(m.user_id) ?? {
+      id: m.user_id, email: m.profiles?.email ?? '', name: m.profiles?.full_name ?? null, roles: [], active: false, warehouses: [],
+    };
     u.roles.push(m.role);
     u.active ||= m.active;
     byUser.set(m.user_id, u);
   }
   const whs = rows(wRes.data);
-  const whCode = new Map(whs.map((w) => [w.id as string, w.code as string]));
+  const whCode = new Map<string, string>(whs.map((w): [string, string] => [w.id, w.code]));
   for (const mw of rows(mwRes.data)) byUser.get(mw.user_id)?.warehouses.push(whCode.get(mw.warehouse_id) ?? '');
 
   const users = [...byUser.values()];

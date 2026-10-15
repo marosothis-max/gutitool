@@ -33,9 +33,10 @@ export default async function NetworkPage({
   all.filter((w) => !w.parent_id).forEach(add);
   all.filter((w) => !ordered.includes(w)).sort((a, b) => ORDER[a.level] - ORDER[b.level]).forEach((w) => ordered.push(w));
 
-  const items = new Map<string, { sku: string; name: string; uom: string; type: string; cells: Map<string, Row>; low: boolean; total: number }>();
+  type Item = { sku: string; name: string; uom: string; type: string; cells: Map<string, Row>; low: boolean; total: number };
+  const items = new Map<string, Item>();
   for (const r of rows(netRes.data) as Row[]) {
-    const it = items.get(r.item_id) ?? { sku: r.sku, name: r.item_name, uom: r.uom, type: r.item_type, cells: new Map(), low: false, total: 0 };
+    const it: Item = items.get(r.item_id) ?? { sku: r.sku, name: r.item_name, uom: r.uom, type: r.item_type, cells: new Map<string, Row>(), low: false, total: 0 };
     it.cells.set(r.warehouse_id, r);
     it.low ||= r.below_min;
     it.total += Number(r.qty_on_hand);
