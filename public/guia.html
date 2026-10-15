@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de uso · Gutitool</title>
+<meta name="description" content="Cómo funciona Gutitool: puesta en marcha, roles, carga de stock, traslados, compras, devoluciones, herramientas y alertas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@50..125,300..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050506; --ink: #17222c; --paper: #fff; --steel-50: #f3f5f6; --steel-100: #e7ebee; --steel-200: #d5dce1;
+    --muted: #5b6873; --molten: #ff5b14; --molten-deep: #c2410c; --molten-tint: #fff1e8;
+    --signal: #f5b400; --signal-tint: #fff5d1; --ok: #1f8a5b; --ok-tint: #e2f3ea;
+    --hazard: repeating-linear-gradient(-45deg, var(--signal) 0 7px, #111 7px 14px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; font-family: "Saira", system-ui, sans-serif; color: var(--ink); background: var(--steel-50); line-height: 1.6; font-size: 16px; }
+  a { color: var(--molten-deep); }
+  code, .code { font-variation-settings: "wdth" 80; font-weight: 600; letter-spacing: .02em; font-family: inherit; background: var(--steel-100); padding: 1px 6px; border-radius: 4px; }
+  .rotulo { font-variation-settings: "wdth" 72; font-weight: 800; text-transform: uppercase; line-height: .95; }
+
+  /* Cabecera */
+  header.top {
+    background-color: var(--bg); color: #fff; position: relative; overflow: hidden;
+    background-image: radial-gradient(60% 90% at 90% 0%, rgba(255,91,20,.35), transparent 70%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.03) 0 1px, transparent 1px 7px);
+  }
+  .top-in { max-width: 1180px; margin: 0 auto; padding: 28px 24px 56px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-size: 22px; }
+  .brand b { color: var(--molten); }
+  header.top h1 { font-size: clamp(44px, 7vw, 86px); margin: 40px 0 14px; }
+  header.top h1 span { color: var(--molten); }
+  header.top p { color: #c3c7cc; max-width: 40em; font-size: 18px; margin: 0; }
+  .tape { height: 14px; background: var(--hazard); }
+
+  /* Diseño */
+  .layout { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 48px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } nav.toc { position: static !important; } }
+  nav.toc { position: sticky; top: 20px; align-self: start; }
+  nav.toc p { font-weight: 700; margin: 0 0 8px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--steel-200); }
+  nav.toc a { display: block; padding: 5px 0 5px 14px; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; font-size: 15px; }
+  nav.toc a:hover { color: var(--ink); border-left-color: var(--molten); }
+
+  section.cap { background: var(--paper); border: 1px solid var(--steel-200); border-radius: 12px; padding: 32px; margin-bottom: 22px; scroll-margin-top: 16px; }
+  @media (max-width: 600px) { section.cap { padding: 22px 18px; } }
+  section.cap > h2 { font-size: clamp(30px, 4vw, 42px); margin: 0 0 8px; }
+  section.cap > .lead { color: var(--muted); font-size: 17px; margin: 0 0 22px; max-width: 46em; }
+  h3 { font-size: 19px; margin: 26px 0 8px; }
+  p, li { max-width: 52em; }
+
+  /* Pasos numerados (solo donde hay secuencia real) */
+  ol.pasos { list-style: none; counter-reset: p; padding: 0; margin: 0; display: grid; gap: 16px; }
+  ol.pasos > li { counter-increment: p; display: grid; grid-template-columns: 40px 1fr; gap: 14px; }
+  ol.pasos > li::before { content: counter(p); width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  ol.pasos > li strong:first-child { display: block; font-size: 17px; }
+
+  /* Ruta en la app */
+  .ruta { display: inline-flex; align-items: center; gap: 6px; background: var(--molten-tint); color: var(--molten-deep); font-weight: 700; padding: 2px 10px; border-radius: 999px; font-size: 14px; white-space: nowrap; }
+
+  /* Avisos */
+  .nota { border-left: 4px solid var(--molten); background: var(--molten-tint); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .nota.ok { border-color: var(--ok); background: var(--ok-tint); }
+  .nota.alerta { border-left: 0; position: relative; background: var(--signal-tint); padding-left: 26px; }
+  .nota.alerta::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--hazard); border-radius: 8px 0 0 8px; }
+
+  /* Tablas */
+  .tabla { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0 4px; }
+  .tabla th, .tabla td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--steel-100); vertical-align: top; }
+  .tabla th { background: var(--steel-50); font-size: 13px; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  .si { color: var(--ok); font-weight: 800; } .no { color: #b7c0c8; }
+
+  /* Red de almacenes */
+  .red { display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr; align-items: center; margin: 14px 0; }
+  @media (max-width: 700px) { .red { grid-template-columns: 1fr; gap: 6px; } .red .fl { transform: rotate(90deg); } }
+  .nodo { background: var(--bg); color: #fff; border-radius: 10px; padding: 14px 16px; }
+  .nodo small { color: #9ca3ab; display: block; }
+  .nodo b { font-size: 18px; }
+  .fl { text-align: center; color: var(--molten); font-size: 26px; font-weight: 800; }
+
+  /* Flujo de documentos */
+  .flujo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  .doc { border: 1px solid var(--steel-200); border-radius: 8px; padding: 6px 12px; background: var(--steel-50); font-weight: 600; font-size: 14px; }
+  .doc.hot { background: var(--molten-tint); border-color: #ffd2bd; color: var(--molten-deep); }
+  .flujo .f { color: var(--muted); }
+
+  /* Ejemplo Excel */
+  .excel { font-size: 13px; border: 1px solid #c9d2d9; border-collapse: collapse; width: 100%; min-width: 640px; }
+  .excel th { background: #217346; color: #fff; padding: 6px 8px; text-align: left; }
+  .excel td { border: 1px solid #dfe5ea; padding: 6px 8px; }
+
+  /* Tarjetas de rol */
+  .roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .rol { border: 1px solid var(--steel-200); border-radius: 10px; padding: 16px; }
+  .rol h3 { margin: 0 0 4px; font-size: 18px; }
+  .rol p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  details { border: 1px solid var(--steel-200); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; background: var(--paper); }
+  details summary { cursor: pointer; font-weight: 700; }
+  details[open] summary { margin-bottom: 8px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 14px; padding: 0 24px 40px; }
+
+  @media print {
+    body { background: #fff; font-size: 12pt; }
+    header.top { background: #fff !important; color: #000; } header.top p { color: #333; }
+    .tape, nav.toc { display: none; }
+    .layout { display: block; padding: 0; }
+    section.cap { border: 0; padding: 0 0 16px; page-break-inside: avoid; }
+    .nodo { background: #fff; color: #000; border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand rotulo" href="/">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="#ff5b14"/><rect x="7" y="8" width="18" height="14" rx="1.5" fill="none" stroke="#120600" stroke-width="2.6"/><path d="M7 15h18" stroke="#120600" stroke-width="2.6"/><path d="M7 25.5h18" stroke="#120600" stroke-width="2.6" stroke-dasharray="3 2"/></svg>
+      Guti<b>tool</b>
+    </a>
+    <h1 class="rotulo">Guía de uso <span>de la plataforma</span></h1>
+    <p>Cómo se pone en marcha una empresa, cómo se carga el stock y cómo se trabaja cada día: entradas, traslados entre almacenes, consumos, herramientas, alertas de mínimo, compras y devoluciones.</p>
+  </div>
+  <div class="tape" aria-hidden="true"></div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contenido">
+    <p>Contenido</p>
+    <ol>
+      <li><a href="#idea">La idea en un minuto</a></li>
+      <li><a href="#roles">Quién hace qué</a></li>
+      <li><a href="#alta">Alta de una empresa</a></li>
+      <li><a href="#configurar">Configurar almacenes</a></li>
+      <li><a href="#carga">Cargar el stock inicial</a></li>
+      <li><a href="#entradas">Entradas de material</a></li>
+      <li><a href="#traslados">Traslados entre almacenes</a></li>
+      <li><a href="#alertas">Alertas y reposición</a></li>
+      <li><a href="#compras">Órdenes de compra</a></li>
+      <li><a href="#devoluciones">Devoluciones</a></li>
+      <li><a href="#herramientas">Herramientas</a></li>
+      <li><a href="#consultas">Consultas e informes</a></li>
+      <li><a href="#usuarios">Usuarios y plan</a></li>
+      <li><a href="#faq">Preguntas frecuentes</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- ================================================================ -->
+    <section class="cap" id="idea">
+      <h2 class="rotulo">La idea en un minuto</h2>
+      <p class="lead">Gutitool sabe cuánto material hay, dónde está exactamente y por qué se movió, en todos los almacenes de la empresa.</p>
+
+      <div class="red" aria-label="Red de almacenes">
+        <div class="nodo"><small>Nivel 1</small><b>Almacén central</b><small>Compra y abastece a toda la red</small></div>
+        <div class="fl" aria-hidden="true">→</div>
+        <div class="nodo"><small>Nivel 2</small><b>Almacén intermedio</b><small>Base regional o logística</small></div>
+        <div class="fl" aria-hidden="true">→</div>
+        <div class="nodo"><small>Nivel 3</small><b>Almacén final</b><small>Obra, pozo, planta o mina</small></div>
+      </div>
+
+      <ul>
+        <li><strong>Todo el stock está ubicado</strong> en un hueco concreto con código <code>PASILLO-ESTANTERÍA-BIN</code>, por ejemplo <code>P01-E03-B12</code>.</li>
+        <li><strong>El stock nunca se edita a mano.</strong> Cambia solo con movimientos: entradas, consumos, traslados, devoluciones o ajustes. Cada uno queda registrado con fecha, usuario y documento, y no se puede borrar.</li>
+        <li><strong>El central ve todo en tiempo real</strong>: lo que hay en cada almacén, lo que va en camino y lo que está pedido.</li>
+        <li><strong>Cuando algo baja de su mínimo</strong>, salta una alerta y el sistema prepara la reposición.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="roles">
+      <h2 class="rotulo">Quién hace qué</h2>
+      <p class="lead">Cada persona entra con su correo y ve el menú según su rol. Una persona puede tener varios roles.</p>
+      <div class="roles">
+        <div class="rol"><h3>Administrador de plataforma</h3><p>Da de alta empresas, fija su plan y límite de usuarios, y las suspende o reactiva.</p></div>
+        <div class="rol"><h3>Administrador de empresa</h3><p>Configura almacenes, crea usuarios y asigna roles. Puede hacer todo dentro de su empresa.</p></div>
+        <div class="rol"><h3>Supervisor</h3><p>Opera cualquier almacén, aprueba traslados, ajusta inventario y hace la carga inicial.</p></div>
+        <div class="rol"><h3>Comprador</h3><p>Gestiona proveedores, artículos y órdenes de compra, y atiende las alertas de reposición.</p></div>
+        <div class="rol"><h3>Almacenista</h3><p>Recibe, ubica, entrega, despacha y devuelve material, solo en los almacenes que tiene asignados. No ve costes ni importes.</p></div>
+        <div class="rol"><h3>Transportista</h3><p>Consulta sus traslados y actualiza las fechas de despacho y entrega. No ve costes ni importes.</p></div>
+        <div class="rol"><h3>Auditor</h3><p>Ve todo y exporta a Excel. No puede modificar nada.</p></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="alta">
+      <h2 class="rotulo">Alta de una empresa</h2>
+      <p class="lead">Lo hace el administrador de la plataforma, una sola vez por cliente.</p>
+      <ol class="pasos">
+        <li><div><strong>Entrar en el panel de empresas</strong>Al iniciar sesión como administrador de plataforma se abre <span class="ruta">Empresas</span>.</div></li>
+        <li><div><strong>Rellenar «Nueva empresa»</strong>Nombre, identificador, CIF/RIF, <strong>plan</strong> y <strong>límite de usuarios</strong>, y los datos de su administrador. Con <em>contraseña temporal</em>, la cuenta queda activa al momento; sin ella, se le envía una invitación por correo.</div></li>
+        <li><div><strong>Listo</strong>La empresa se crea con su almacén central (código <code>CEN</code>). Su administrador ya puede entrar y continuar con la configuración.</div></li>
+      </ol>
+      <div class="nota">El plan y el límite se pueden cambiar en cualquier momento desde la tabla de empresas, con el botón <strong>Cambiar</strong>. Si una empresa deja de pagar, <strong>Suspender</strong> le corta el acceso al instante sin borrar sus datos.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="configurar">
+      <h2 class="rotulo">Configurar almacenes y ubicaciones</h2>
+      <p class="lead">Primer paso del administrador de la empresa, en <span class="ruta">Configuración › Almacenes y ubicaciones</span>.</p>
+      <ol class="pasos">
+        <li><div><strong>Crear los almacenes intermedios</strong>En «Nuevo almacén» elige nivel <em>Intermedio</em>, que recibe material del central. Pon un código corto y fácil de leer, como <code>BASE-NORTE</code>.</div></li>
+        <li><div><strong>Crear los almacenes finales</strong>Nivel <em>Final</em>: cada obra, pozo, planta o mina. Pueden depender de un intermedio o directamente del central.</div></li>
+        <li><div><strong>Generar las ubicaciones</strong>En «Generar ubicaciones» elige el almacén, escribe los pasillos (<code>P01, P02</code>) y cuántas estanterías y bins tiene cada uno. Con 2 pasillos, 5 estanterías y 10 bins se crean 100 ubicaciones de golpe, de <code>P01-E01-B01</code> a <code>P02-E05-B10</code>.</div></li>
+      </ol>
+      <div class="nota ok">No hace falta crear todas las ubicaciones de antemano: la carga desde Excel crea las que falten.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="carga">
+      <h2 class="rotulo">Cargar el stock inicial desde Excel</h2>
+      <p class="lead">La forma rápida de meter todo el inventario que ya tienes. Disponible para administrador y supervisor en <span class="ruta">Configuración › Carga desde Excel</span>.</p>
+
+      <h3>Columnas del Excel</h3>
+      <div class="scroll">
+        <table class="excel" aria-label="Ejemplo de Excel de carga">
+          <thead><tr><th>SKU</th><th>Nombre</th><th>Tipo</th><th>Unidad</th><th>Coste</th><th>Almacén</th><th>Ubicación</th><th>Cantidad</th><th>Mínimo</th></tr></thead>
+          <tbody>
+            <tr><td>VAL-BOL-2</td><td>Válvula de bola 2" 300#</td><td>consumible</td><td>UD</td><td>85,40</td><td>CEN</td><td>P01-E01-B01</td><td>24</td><td>6</td></tr>
+            <tr><td>ELE-7018-32</td><td>Electrodo E7018 3,2 mm</td><td>consumible</td><td>KG</td><td>6,10</td><td>BASE-NORTE</td><td>P03-E02-B04</td><td>210</td><td>50</td></tr>
+            <tr><td>HER-TAL-18V</td><td>Taladro percutor 18V</td><td>herramienta</td><td>UD</td><td>189</td><td>CEN</td><td>P09-E01-B01</td><td>3</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Almacén</strong> es el código de un almacén que ya exista.</li>
+        <li><strong>Ubicación</strong> va siempre como <code>PASILLO-ESTANTERÍA-BIN</code>. Si no existe, se crea.</li>
+        <li><strong>Nombre, tipo, unidad y coste</strong> solo hacen falta para artículos nuevos. Si el SKU ya existe, se usa el que hay.</li>
+        <li><strong>Mínimo</strong> es opcional. Si lo pones, se activa la alerta para ese artículo en ese almacén.</li>
+        <li>Los decimales pueden ir con coma o con punto.</li>
+      </ul>
+
+      <h3>Cómo se hace</h3>
+      <ol class="pasos">
+        <li><div><strong>Preparar el Excel</strong>Usa <em>Descargar plantilla</em> o tu propio Excel con esas columnas. La cabecera es opcional.</div></li>
+        <li><div><strong>Copiar y pegar</strong>Selecciona las filas en Excel, pulsa Ctrl+C y pégalas en el cuadro con Ctrl+V.</div></li>
+        <li><div><strong>Revisar la vista previa</strong>Las filas con algún problema salen marcadas en amarillo con el motivo. Corrígelas en el Excel y vuelve a pegar.</div></li>
+        <li><div><strong>Cargar</strong>Pulsa <em>Cargar</em>. El sistema indica cuántas entradas de stock, artículos nuevos y ubicaciones nuevas se han creado.</div></li>
+      </ol>
+      <div class="nota alerta">La carga queda registrada como <strong>ajuste «Inventario inicial»</strong>. Si te equivocas, no se borra: se corrige con un ajuste. Por eso conviene revisar bien la vista previa.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="entradas">
+      <h2 class="rotulo">Entradas de material</h2>
+      <p class="lead">Todo lo que llega de un proveedor entra por <span class="ruta">Logística › Entradas de material</span>. Siempre va asociado a un documento.</p>
+      <ol class="pasos">
+        <li><div><strong>Elegir el almacén que recibe</strong>Solo aparecen los almacenes que puedes operar.</div></li>
+        <li><div><strong>Elegir el documento</strong><em>Orden de compra</em>: las líneas pendientes se rellenan solas con la cantidad que falta. <em>Factura del proveedor</em>: escribe el número de factura y añade los artículos a mano.</div></li>
+        <li><div><strong>Ubicar cada artículo</strong>Indica en qué bin se deja y la cantidad realmente recibida.</div></li>
+        <li><div><strong>Registrar</strong>Se genera el número <code>REC-2026-000001</code> y el stock se actualiza al momento. Si llegó menos de lo pedido, la orden queda <em>Recibida parcial</em> con lo pendiente a la vista.</div></li>
+      </ol>
+      <div class="nota">No se puede registrar una entrada sin orden de compra ni factura: el sistema lo impide para que todo el material tenga origen justificado.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="traslados">
+      <h2 class="rotulo">Traslados entre almacenes</h2>
+      <p class="lead">Así baja el material del central a los intermedios y de ahí a cada obra, pozo, planta o mina. Se gestiona en <span class="ruta">Logística › Traslados</span>.</p>
+      <div class="flujo" aria-label="Estados de un traslado">
+        <span class="doc">Solicitado</span><span class="f">→</span><span class="doc">Aprobado</span><span class="f">→</span>
+        <span class="doc hot">En tránsito</span><span class="f">→</span><span class="doc">Recibido</span>
+      </div>
+      <ol class="pasos">
+        <li><div><strong>Solicitud</strong>Se crea al pedir reposición desde una alerta o desde la API. Lleva número <code>TRF-2026-…</code>.</div></li>
+        <li><div><strong>Aprobación</strong>Opcional: el supervisor pulsa <em>Aprobar</em>.</div></li>
+        <li><div><strong>Despacho</strong>El almacén de origen pulsa <em>Despachar</em>. El material sale de su stock y pasa a <em>en tránsito</em>. El transportista puede actualizar las fechas previstas.</div></li>
+        <li><div><strong>Recepción</strong>El almacén de destino elige la ubicación y pulsa <em>Recibir</em>. Si llega menos de lo despachado, el traslado queda marcado <em>Con diferencias</em>.</div></li>
+      </ol>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="alertas">
+      <h2 class="rotulo">Alertas de mínimo y reposición</h2>
+      <p class="lead">El panel de inicio muestra en tiempo real los artículos bajo mínimo, con un contador en el menú.</p>
+      <ul>
+        <li>Cada vez que cambia el stock, se compara con el <strong>mínimo de ese almacén</strong>, que se fija en <span class="ruta">Artículos y mínimos</span> o en la carga desde Excel.</li>
+        <li>Si queda igual o por debajo, aparece la alerta con franja amarilla. Solo hay una alerta por artículo y almacén, sin repeticiones.</li>
+        <li>Se avisa a administradores, supervisores, compradores y a los almacenistas de ese almacén.</li>
+      </ul>
+      <h3>Qué hace el botón de reposición</h3>
+      <div class="scroll">
+        <table class="tabla">
+          <thead><tr><th>Alerta en…</th><th>Botón</th><th>Qué genera</th></tr></thead>
+          <tbody>
+            <tr><td>Almacén final o intermedio</td><td><em>Pedir traslado</em></td><td>Un traslado desde su almacén superior</td></tr>
+            <tr><td>Almacén central</td><td><em>Crear orden de compra</em></td><td>Una orden de compra en borrador al proveedor elegido</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>La cantidad propuesta llena hasta el <strong>máximo</strong> si está definido; si no, usa la <strong>cantidad de reposición</strong>. Cuando el material llega y el stock supera el mínimo, la alerta se cierra sola.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="compras">
+      <h2 class="rotulo">Órdenes de compra</h2>
+      <p class="lead">En <span class="ruta">Logística › Órdenes de compra</span>, con fecha estimada de despacho y de entrega en cada línea.</p>
+      <div class="flujo" aria-label="Estados de una orden de compra">
+        <span class="doc">Borrador</span><span class="f">→</span><span class="doc">Enviada</span><span class="f">→</span><span class="doc">Confirmada</span><span class="f">→</span>
+        <span class="doc hot">Recibida parcial</span><span class="f">→</span><span class="doc">Recibida</span>
+      </div>
+      <ul>
+        <li>Al abrir una orden verás sus líneas, lo pedido, lo recibido y lo pendiente, y las recepciones asociadas.</li>
+        <li><strong>Enviar por correo</strong> manda el detalle con el Excel adjunto al correo configurado de la empresa, con copia opcional al proveedor.</li>
+        <li><strong>Excel</strong> descarga la orden completa.</li>
+        <li>Las entregas fuera de plazo aparecen en rojo en la lista y en el panel de inicio.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="devoluciones">
+      <h2 class="rotulo">Devoluciones</h2>
+      <p class="lead">En <span class="ruta">Logística › Devoluciones</span>. Cada devolución recibe un número propio y correlativo: <code>DEV-2026-000001</code>, <code>DEV-2026-000002</code>…</p>
+      <ul>
+        <li><strong>Al proveedor</strong>: material defectuoso o sobrante. Sale del stock y queda el documento para reclamar el abono.</li>
+        <li><strong>Al almacén superior</strong>: el sobrante de una obra vuelve a su intermedio. Se genera y despacha automáticamente el traslado de vuelta.</li>
+        <li>El <strong>motivo es obligatorio</strong> y la numeración no tiene saltos ni se puede modificar.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="herramientas">
+      <h2 class="rotulo">Herramientas</h2>
+      <p class="lead">Las herramientas son artículos de tipo <em>herramienta</em> y cada unidad física lleva número de serie. Se gestionan en <span class="ruta">Logística › Herramientas</span>.</p>
+      <ul>
+        <li><strong>Entregar</strong>: indica a quién (operario, cuadrilla u orden de trabajo) y la fecha de devolución.</li>
+        <li><strong>Registrar devolución</strong>: elige la ubicación donde se guarda. Puede volver a otro almacén distinto del de salida.</li>
+        <li>El filtro <em>Con devolución vencida</em> muestra lo que debería haber vuelto ya.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="consultas">
+      <h2 class="rotulo">Consultas e informes</h2>
+      <div class="scroll">
+        <table class="tabla">
+          <thead><tr><th>Pantalla</th><th>Para qué sirve</th><th>Excel</th></tr></thead>
+          <tbody>
+            <tr><td><span class="ruta">Panel</span></td><td>Resumen: bajo mínimo, en tránsito, compras abiertas, herramientas fuera, retrasos y últimos movimientos.</td><td>Stock</td></tr>
+            <tr><td><span class="ruta">Red de almacenes</span></td><td>Matriz artículo por almacén con stock, mínimo, en camino y pedido. La vista del central.</td><td class="si">Sí</td></tr>
+            <tr><td><span class="ruta">Stock por ubicación</span></td><td>Qué hay en cada bin, con su valor. Búsqueda por código, nombre o ubicación.</td><td class="si">Sí</td></tr>
+            <tr><td><span class="ruta">Movimientos</span></td><td>Historial completo e inalterable, con filtros por almacén, tipo y fechas.</td><td class="si">Sí</td></tr>
+            <tr><td><span class="ruta">Órdenes de compra</span></td><td>Seguimiento de pedidos y entregas previstas.</td><td class="si">Sí</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="nota">Los <strong>costes, el valor del stock y los importes</strong> solo los ven administradores, supervisores, compradores y auditores. Almacenistas y transportistas ven las mismas pantallas con cantidades, ubicaciones y fechas, pero sin dinero, también en los Excel. La restricción la aplica la propia base de datos.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="usuarios">
+      <h2 class="rotulo">Usuarios y límite del plan</h2>
+      <p class="lead">El administrador de la empresa gestiona su equipo en <span class="ruta">Empresa › Usuarios</span>.</p>
+      <ol class="pasos">
+        <li><div><strong>Datos de la persona</strong>Nombre y correo. Con <em>contraseña temporal</em> entra al momento; sin ella, recibe una invitación por correo.</div></li>
+        <li><div><strong>Roles</strong>Marca uno o varios. A los almacenistas, indica además qué almacenes operan.</div></li>
+        <li><div><strong>Dar de alta</strong>La barra superior muestra cuántas plazas del plan quedan.</div></li>
+      </ol>
+      <div class="nota alerta">Al llegar al límite del plan no se pueden añadir más personas. Hay que pedir la ampliación al administrador de la plataforma. Quitar a alguien libera su plaza. Una persona con varios roles ocupa una sola plaza.</div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section class="cap" id="faq">
+      <h2 class="rotulo">Preguntas frecuentes</h2>
+      <details><summary>Me he equivocado en una cantidad, ¿cómo la corrijo?</summary>Los movimientos no se editan ni se borran, para que el historial sea fiable. Un supervisor o administrador registra un <strong>ajuste</strong> positivo o negativo con su motivo, y queda constancia de ambos.</details>
+      <details><summary>Un almacenista no ve un almacén</summary>Los almacenistas solo operan los almacenes que tienen asignados. El administrador puede darlo de alta de nuevo en Usuarios marcando el almacén que falta.</details>
+      <details><summary>¿Por qué no me deja dar salida a material?</summary>Porque no hay stock suficiente en esa ubicación. El sistema nunca deja un bin por debajo de cero. Comprueba en <em>Stock por ubicación</em> en qué bin está realmente.</details>
+      <details><summary>¿Qué diferencia hay entre mínimo, reposición y máximo?</summary><strong>Mínimo</strong>: a partir de qué cantidad salta la alerta. <strong>Reposición</strong>: cuánto se pide por defecto. <strong>Máximo</strong>: si existe, se pide lo necesario para llegar hasta él.</details>
+      <details><summary>¿Ven otras empresas mis datos?</summary>No. Cada empresa solo ve lo suyo, y lo garantiza la propia base de datos, no solo la pantalla. Ni siquiera los usuarios de otra empresa de la plataforma pueden consultarlos.</details>
+      <details><summary>¿Funciona en el móvil?</summary>Sí. La aplicación se adapta a la pantalla del teléfono, y el menú se abre con el botón <em>Menú</em> arriba a la derecha.</details>
+    </section>
+  </main>
+</div>
+
+<footer>Gutitool, inventario industrial multialmacén · Guía de uso</footer>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getTenantContext, fmtDate, fmtMoney, fmtQty, PO_STATUS, rows } from '@/lib/app';
+import { COST_ROLES, getLinePrices, getTenantContext, fmtDate, fmtMoney, fmtQty, PO_STATUS, rows } from '@/lib/app';
 import { PageHead, Panel, StatusBadge } from '@/components/ui';
 import { SendOrderEmailButton } from '@/components/SendOrderEmailButton';
 import { OrderStatusActions } from './OrderStatusActions';
@@ -13,7 +13,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ tenant
     supabase.from('purchase_orders')
       .select(`id, number, status, est_dispatch_date, est_delivery_date, supplier_reference, notes, created_at,
                suppliers(name, email), warehouses(code, name),
-               purchase_order_lines(id, qty_ordered, qty_received, unit_price, est_dispatch_date, est_delivery_date, items(sku, name, uom))`)
+               purchase_order_lines(id, qty_ordered, qty_received, est_dispatch_date, est_delivery_date, items(sku, name, uom))`)
       .eq('tenant_id', tenantId).eq('id', id).maybeSingle(),
     supabase.from('tenant_settings').select('notify_email').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('goods_receipts').select('id, number, received_at, supplier_invoice_number').eq('purchase_order_id', id).order('received_at'),
@@ -24,7 +24,9 @@ export default async function OrderDetail({ params }: { params: Promise<{ tenant
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const settings = settingsRes.data as any;
   const receipts = rows(receiptsRes.data);
-  const total = (o.purchase_order_lines ?? []).reduce((a: number, l: any) => a + Number(l.qty_ordered) * Number(l.unit_price), 0);
+  const prices = await getLinePrices(supabase, tenantId, can(...COST_ROLES), [id]);
+  const price = (lineId: string) => prices?.get(lineId)?.price ?? 0;
+  const total = (o.purchase_order_lines ?? []).reduce((a: number, l: any) => a + Number(l.qty_ordered) * price(l.id), 0);
   const canBuy = can('company_admin', 'supervisor', 'buyer');
 
   return (
@@ -40,7 +42,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ tenant
       />
 
       <div className="kpis">
-        <div className="kpi"><div className="kpi-label">Importe</div><div className="kpi-value" style={{ fontSize: 26 }}>{fmtMoney(total)}</div></div>
+        {prices && <div className="kpi"><div className="kpi-label">Importe</div><div className="kpi-value" style={{ fontSize: 26 }}>{fmtMoney(total)}</div></div>}
         <div className="kpi"><div className="kpi-label">Despacho estimado</div><div className="kpi-value" style={{ fontSize: 26 }}>{fmtDate(o.est_dispatch_date)}</div></div>
         <div className="kpi"><div className="kpi-label">Entrega estimada</div><div className="kpi-value" style={{ fontSize: 26 }}>{fmtDate(o.est_delivery_date)}</div></div>
         <div className="kpi"><div className="kpi-label">Ref. proveedor</div><div className="kpi-value" style={{ fontSize: 26 }}>{o.supplier_reference || '—'}</div></div>
@@ -51,7 +53,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ tenant
       <Panel title="Líneas" flush>
         <div className="table-scroll">
           <table className="table">
-            <thead><tr><th>Artículo</th><th className="r">Pedido</th><th className="r">Recibido</th><th className="r">Pendiente</th><th className="r">Precio</th><th className="r">Importe</th><th>Despacho</th><th>Entrega</th></tr></thead>
+            <thead><tr><th>Artículo</th><th className="r">Pedido</th><th className="r">Recibido</th><th className="r">Pendiente</th>{prices && <><th className="r">Precio</th><th className="r">Importe</th></>}<th>Despacho</th><th>Entrega</th></tr></thead>
             <tbody>
               {(o.purchase_order_lines ?? []).map((l: any) => {
                 const pending = Math.max(Number(l.qty_ordered) - Number(l.qty_received), 0);
@@ -61,8 +63,10 @@ export default async function OrderDetail({ params }: { params: Promise<{ tenant
                     <td className="r">{fmtQty(l.qty_ordered)} {l.items?.uom}</td>
                     <td className="r">{fmtQty(l.qty_received)}</td>
                     <td className="r" style={{ fontWeight: pending ? 700 : 400 }}>{fmtQty(pending)}</td>
-                    <td className="r">{fmtMoney(l.unit_price)}</td>
-                    <td className="r">{fmtMoney(Number(l.qty_ordered) * Number(l.unit_price))}</td>
+                    {prices && <>
+                      <td className="r">{fmtMoney(price(l.id))}</td>
+                      <td className="r">{fmtMoney(Number(l.qty_ordered) * price(l.id))}</td>
+                    </>}
                     <td>{fmtDate(l.est_dispatch_date ?? o.est_dispatch_date)}</td>
                     <td>{fmtDate(l.est_delivery_date ?? o.est_delivery_date)}</td>
                   </tr>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getTenantContext, fmtMoney, fmtQty, rows } from '@/lib/app';
+import { COST_ROLES, getItemCosts, getTenantContext, fmtMoney, fmtQty, rows } from '@/lib/app';
 import { Badge, Empty, PageHead, Panel } from '@/components/ui';
 import { NewItemForm, ThresholdForm } from './ItemForms';
 
@@ -13,8 +13,9 @@ export default async function ItemsPage({
   const { supabase, can } = await getTenantContext(tenantId);
   const canEdit = can('company_admin', 'supervisor', 'buyer');
   const canThresholds = can('company_admin', 'supervisor');
+  const costs = await getItemCosts(supabase, tenantId, can(...COST_ROLES));
 
-  let query = supabase.from('items').select('id, sku, name, item_type, uom, unit_cost, active').eq('tenant_id', tenantId).order('sku').limit(1000);
+  let query = supabase.from('items').select('id, sku, name, item_type, uom, active').eq('tenant_id', tenantId).order('sku').limit(1000);
   const term = q?.replace(/[,()*%\\]/g, ' ').trim();
   if (term) query = query.or(`sku.ilike.%${term}%,name.ilike.%${term}%`);
   if (type) query = query.eq('item_type', type);
@@ -54,14 +55,14 @@ export default async function ItemsPage({
           {items.length ? (
             <div className="table-scroll">
               <table className="table">
-                <thead><tr><th>Artículo</th><th>Tipo</th><th className="r">Stock total</th><th className="r">Coste</th><th>Mínimos</th></tr></thead>
+                <thead><tr><th>Artículo</th><th>Tipo</th><th className="r">Stock total</th>{costs && <th className="r">Coste</th>}<th>Mínimos</th></tr></thead>
                 <tbody>
                   {items.map((it) => (
                     <tr key={it.id}>
                       <td>{it.name}<span className="cell-sub code">{it.sku}</span></td>
                       <td>{it.item_type === 'tool' ? <Badge tone="blue">Herramienta</Badge> : <Badge>Consumible</Badge>}</td>
                       <td className="r" style={{ fontWeight: 600 }}>{fmtQty(stock.get(it.id) ?? 0)} {it.uom}</td>
-                      <td className="r">{fmtMoney(it.unit_cost)}</td>
+                      {costs && <td className="r">{fmtMoney(costs.get(it.id) ?? 0)}</td>}
                       <td className="code" style={{ fontSize: 13 }}>{mins.get(it.id)?.join(', ') ?? <span className="muted">—</span>}</td>
                     </tr>
                   ))}

@@ -1,4 +1,5 @@
 import { ApiError, handler, requireTenant, unwrap } from '@/lib/api';
+import { COST_ROLES, getItemCosts } from '@/lib/app';
 import { buildWorkbook, fmt, xlsxResponse } from '@/lib/excel';
 
 const LEVEL = { central: 'Central', intermediate: 'Intermedio', final: 'Final' } as Record<string, string>;
@@ -11,7 +12,8 @@ const MAX_ROWS = 50_000;
  *        = orders     → seguimiento de OC y traslados con fechas estimadas
  */
 export const GET = handler<{ tenantId: string; kind: string }>(async (req, { tenantId, kind }) => {
-  const { supabase } = await requireTenant(tenantId);
+  const { supabase, roles } = await requireTenant(tenantId);
+  const showCosts = roles.some((r) => COST_ROLES.includes(r));
   const q = new URL(req.url).searchParams;
   const k = kind.replace(/\.xlsx$/, '');
   const stamp = new Date().toISOString().slice(0, 10);
@@ -25,6 +27,7 @@ export const GET = handler<{ tenantId: string; kind: string }>(async (req, { ten
       supabase.from('v_stock_network').select('*').eq('tenant_id', tenantId).order('sku').limit(MAX_ROWS),
     ]);
     const loc = unwrap(locRes) as any[];
+    const costs = await getItemCosts(supabase, tenantId, showCosts);
     const net = unwrap(netRes) as any[];
     const buf = await buildWorkbook([
       {
@@ -35,9 +38,10 @@ export const GET = handler<{ tenantId: string; kind: string }>(async (req, { ten
           { header: 'Bin', key: 'bin', width: 8 }, { header: 'SKU', key: 'sku', width: 16 },
           { header: 'Artículo', key: 'item_name', width: 34 }, { header: 'Tipo', key: 'type' },
           { header: 'UdM', key: 'uom', width: 8 }, { header: 'Cantidad', key: 'qty_on_hand', numFmt: fmt.QTY },
-          { header: 'Coste unit.', key: 'unit_cost', numFmt: fmt.MONEY }, { header: 'Valor', key: 'stock_value', numFmt: fmt.MONEY },
+          ...(showCosts ? [{ header: 'Coste unit.', key: 'unit_cost', numFmt: fmt.MONEY }, { header: 'Valor', key: 'stock_value', numFmt: fmt.MONEY }] : []),
         ],
         rows: (loc as any[]).map((r) => ({ ...r, level: LEVEL[r.warehouse_level],
+          unit_cost: costs?.get(r.item_id) ?? null, stock_value: costs ? Number(r.qty_on_hand) * (costs.get(r.item_id) ?? 0) : null,
           type: r.item_type === 'tool' ? 'Herramienta' : 'Consumible' })),
       },
       {

@@ -11,12 +11,15 @@ export type PurchaseOrderDetail = {
   supplier_reference: string | null;
   notes: string | null;
   created_at: string;
+  /** false para almacenistas y transportistas: no se cargan precios ni importes */
+  showPrices: boolean;
   suppliers: { name: string; email: string | null; tax_id: string | null };
   warehouses: { code: string; name: string };
   purchase_order_lines: {
+    id: string;
     qty_ordered: string;
     qty_received: string;
-    unit_price: string;
+    unit_price: number | null;
     est_dispatch_date: string | null;
     est_delivery_date: string | null;
     items: { sku: string; name: string; uom: string; item_type: string };
@@ -34,13 +37,23 @@ export async function loadPurchaseOrder(supabase: SupabaseClient, tenantId: stri
       .from('purchase_orders')
       .select(`id, number, status, est_dispatch_date, est_delivery_date, supplier_reference, notes, created_at,
                suppliers(name, email, tax_id), warehouses(code, name),
-               purchase_order_lines(qty_ordered, qty_received, unit_price, est_dispatch_date, est_delivery_date,
+               purchase_order_lines(id, qty_ordered, qty_received, est_dispatch_date, est_delivery_date,
                                     items(sku, name, uom, item_type))`)
       .eq('tenant_id', tenantId)
       .eq('id', id)
       .maybeSingle(),
   ) as unknown as PurchaseOrderDetail | null;
   if (!po) throw new ApiError(404, 'Orden de compra no encontrada');
+
+  // Los precios solo se obtienen si el rol puede verlos (lo comprueba la base de datos)
+  const { data: allowed } = await supabase.rpc('can_see_costs', { p_tenant: tenantId });
+  po.showPrices = allowed === true;
+  const prices = new Map<string, number>();
+  if (po.showPrices) {
+    const { data } = await supabase.rpc('po_line_prices', { p_tenant_id: tenantId, p_purchase_order_ids: [id] });
+    for (const r of (data ?? []) as { line_id: string; unit_price: number }[]) prices.set(r.line_id, Number(r.unit_price));
+  }
+  po.purchase_order_lines = po.purchase_order_lines.map((l) => ({ ...l, unit_price: prices.get(l.id) ?? null }));
   return po;
 }
 
@@ -54,7 +67,7 @@ function lineRows(po: PurchaseOrderDetail) {
     qty_received: l.qty_received,
     qty_pending: Math.max(Number(l.qty_ordered) - Number(l.qty_received), 0),
     unit_price: l.unit_price,
-    total: Number(l.qty_ordered) * Number(l.unit_price),
+    total: l.unit_price === null ? null : Number(l.qty_ordered) * l.unit_price,
     est_dispatch: l.est_dispatch_date ?? po.est_dispatch_date,
     est_delivery: l.est_delivery_date ?? po.est_delivery_date,
   }));
@@ -75,7 +88,7 @@ export function buildPurchaseOrderWorkbook(po: PurchaseOrderDetail) {
         ['Almacén destino', `${po.warehouses.code} · ${po.warehouses.name}`],
         ['Despacho estimado', po.est_dispatch_date],
         ['Entrega estimada', po.est_delivery_date],
-        ['Total', poTotal(po).toFixed(2) + ' €'],
+        ...(po.showPrices ? [['Total', poTotal(po).toFixed(2) + ' €'] as [string, string]] : []),
       ],
       columns: [
         { header: 'SKU', key: 'sku', width: 16 },
@@ -85,8 +98,10 @@ export function buildPurchaseOrderWorkbook(po: PurchaseOrderDetail) {
         { header: 'Pedido', key: 'qty_ordered', numFmt: fmt.QTY },
         { header: 'Recibido', key: 'qty_received', numFmt: fmt.QTY },
         { header: 'Pendiente', key: 'qty_pending', numFmt: fmt.QTY },
-        { header: 'Precio', key: 'unit_price', numFmt: fmt.MONEY },
-        { header: 'Importe', key: 'total', numFmt: fmt.MONEY },
+        ...(po.showPrices ? [
+          { header: 'Precio', key: 'unit_price', numFmt: fmt.MONEY },
+          { header: 'Importe', key: 'total', numFmt: fmt.MONEY },
+        ] : []),
         { header: 'Despacho est.', key: 'est_dispatch', numFmt: fmt.DATE },
         { header: 'Entrega est.', key: 'est_delivery', numFmt: fmt.DATE },
       ],
@@ -102,7 +117,7 @@ const d = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-ES') : '
 export function renderPurchaseOrderEmail(po: PurchaseOrderDetail, tenantName: string, message?: string) {
   const rows = lineRows(po)
     .map((r) => `<tr><td>${esc(r.sku)}</td><td>${esc(r.name)}</td><td align="right">${esc(r.qty_ordered)} ${esc(r.uom)}</td>
-      <td align="right">${Number(r.unit_price).toFixed(2)} €</td><td align="right">${r.total.toFixed(2)} €</td>
+      <td align="right">${Number(r.unit_price).toFixed(2)} €</td><td align="right">${(r.total ?? 0).toFixed(2)} €</td>
       <td>${d(r.est_dispatch)}</td><td>${d(r.est_delivery)}</td></tr>`)
     .join('');
   return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#1b2430">

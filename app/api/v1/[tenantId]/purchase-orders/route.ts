@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handler, isoDate, pagination, parseBody, requireTenant, unwrap, uuid } from '@/lib/api';
+import { COST_ROLES, getLinePrices } from '@/lib/app';
 
 /**
  * GET /api/v1/{tenantId}/purchase-orders
  * Filtros: status, supplierId, warehouseId, late=true, page, pageSize
  */
 export const GET = handler<{ tenantId: string }>(async (req, { tenantId }) => {
-  const { supabase } = await requireTenant(tenantId);
+  const { supabase, roles } = await requireTenant(tenantId);
   const url = new URL(req.url);
   const q = url.searchParams;
   const { page, pageSize, from, to } = pagination(url);
@@ -16,7 +17,7 @@ export const GET = handler<{ tenantId: string }>(async (req, { tenantId }) => {
     .from('purchase_orders')
     .select(`id, number, status, est_dispatch_date, est_delivery_date, created_at,
              suppliers(name), warehouses(code, name),
-             purchase_order_lines(item_id, qty_ordered, qty_received, unit_price)`, { count: 'exact' })
+             purchase_order_lines(id, item_id, qty_ordered, qty_received)`, { count: 'exact' })
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -29,7 +30,12 @@ export const GET = handler<{ tenantId: string }>(async (req, { tenantId }) => {
   }
   const { data, error, count } = await query;
   if (error) unwrap({ data, error });
-  return NextResponse.json({ data, page, pageSize, total: count });
+  const list = (data ?? []) as unknown as { id: string; purchase_order_lines: { id: string }[] }[];
+  const prices = await getLinePrices(supabase, tenantId, roles.some((r) => COST_ROLES.includes(r)), list.map((o) => o.id));
+  const withPrices = prices
+    ? list.map((o) => ({ ...o, purchase_order_lines: o.purchase_order_lines.map((l) => ({ ...l, unit_price: prices.get(l.id)?.price ?? null })) }))
+    : list;
+  return NextResponse.json({ data: withPrices, page, pageSize, total: count });
 });
 
 const Body = z.object({

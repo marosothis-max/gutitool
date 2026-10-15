@@ -1,4 +1,4 @@
-import { getTenantContext, fmtMoney, fmtQty, LEVEL_ES, rows } from '@/lib/app';
+import { COST_ROLES, getItemCosts, getTenantContext, fmtMoney, fmtQty, LEVEL_ES, rows } from '@/lib/app';
 import { Badge, Empty, PageHead, Panel } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 
@@ -9,7 +9,8 @@ export default async function StockPage({
 }: { params: Promise<{ tenantId: string }>; searchParams: Promise<{ q?: string; w?: string; type?: string }> }) {
   const { tenantId } = await params;
   const { q, w, type } = await searchParams;
-  const { supabase } = await getTenantContext(tenantId);
+  const { supabase, can } = await getTenantContext(tenantId);
+  const costs = await getItemCosts(supabase, tenantId, can(...COST_ROLES));
 
   let query = supabase.from('v_stock_by_location').select('*').eq('tenant_id', tenantId)
     .gt('qty_on_hand', 0).order('warehouse_code').order('location_code').limit(1000);
@@ -23,14 +24,17 @@ export default async function StockPage({
     supabase.from('warehouses').select('id, code, name, level').eq('tenant_id', tenantId).order('code'),
   ]);
   const list = rows(stockRes.data);
-  const total = list.reduce((s: number, r) => s + Number(r.stock_value ?? 0), 0);
+  const value = (r: { item_id: string; qty_on_hand: string }) => Number(r.qty_on_hand) * (costs?.get(r.item_id) ?? 0);
+  const total = costs ? list.reduce((s: number, r) => s + value(r), 0) : 0;
   const qs = new URLSearchParams({ ...(w ? { warehouseId: w } : {}) }).toString();
 
   return (
     <>
       <PageHead
         title="Stock por ubicación"
-        lead={<>Cada artículo en su pasillo, estantería y bin. Valor del stock mostrado: <strong className="num">{fmtMoney(total)}</strong></>}
+        lead={costs
+          ? <>Cada artículo en su pasillo, estantería y bin. Valor del stock mostrado: <strong className="num">{fmtMoney(total)}</strong></>
+          : 'Cada artículo en su pasillo, estantería y bin.'}
         actions={<a className="btn btn-ghost btn-sm" href={`/api/v1/${tenantId}/exports/stock.xlsx${qs ? `?${qs}` : ''}`}><Icon name="download" size={16} />Excel</a>}
       />
       <Panel flush>
@@ -51,7 +55,7 @@ export default async function StockPage({
           <div className="table-scroll">
             <table className="table">
               <thead>
-                <tr><th>Ubicación</th><th>Almacén</th><th>Artículo</th><th>Tipo</th><th className="r">Cantidad</th><th className="r">Valor</th></tr>
+                <tr><th>Ubicación</th><th>Almacén</th><th>Artículo</th><th>Tipo</th><th className="r">Cantidad</th>{costs && <th className="r">Valor</th>}</tr>
               </thead>
               <tbody>
                 {list.map((r) => (
@@ -62,7 +66,7 @@ export default async function StockPage({
                     <td>{r.item_name}<span className="cell-sub code">{r.sku}</span></td>
                     <td>{r.item_type === 'tool' ? <Badge tone="blue">Herramienta</Badge> : <Badge>Consumible</Badge>}</td>
                     <td className="r" style={{ fontWeight: 600 }}>{fmtQty(r.qty_on_hand)} {r.uom}</td>
-                    <td className="r">{fmtMoney(r.stock_value)}</td>
+                    {costs && <td className="r">{fmtMoney(value(r))}</td>}
                   </tr>
                 ))}
               </tbody>

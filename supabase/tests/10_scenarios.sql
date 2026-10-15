@@ -217,7 +217,7 @@ set role authenticated;
 do $$ begin
   assert (select count(*) from public.stock_movements) > 0, 'el auditor debe ver movimientos';
   update public.items set unit_cost = 0;   -- RLS: no afecta a filas
-  assert (select min(unit_cost) from public.items) > 0, 'el auditor no debe poder modificar';
+  assert (select min(unit_cost) from public.item_costs('10000000-0000-0000-0000-00000000000a')) > 0, 'el auditor no debe poder modificar';
 end $$;
 do $$ begin
   update public.profiles set is_super_admin = true where id = auth.uid();
@@ -278,7 +278,7 @@ select public.import_initial_stock(:'t_a', '[
 \echo '   ' :res
 do $$ begin
   assert (select item_type from public.items where sku = 'HER-AMO-01') = 'tool', 'debe crear herramienta';
-  assert (select unit_cost from public.items where sku = 'MEC-BRD-050') = 12.5, 'coste con coma decimal';
+  assert (select c.unit_cost from public.item_costs('10000000-0000-0000-0000-00000000000a') c join public.items i on i.id = c.item_id where i.sku = 'MEC-BRD-050') = 12.5, 'coste con coma decimal';
   assert exists (select 1 from public.locations where code = 'P02-E01-B05'), 'debe crear ubicación en mayúsculas';
   assert (select sum(qty_on_hand) from public.stock_levels s join public.items i on i.id = s.item_id
            where i.sku = 'EPI-GNT-09' and s.warehouse_id = '20000000-0000-0000-0000-0000000000c0') = 280, 'central guantes 180+100';
@@ -301,6 +301,40 @@ do $$ begin
 exception when others then
   if sqlerrm like 'NO debería%' then raise; end if;
   raise notice '   OK rechazado (almacenista): %', sqlerrm;
+end $$;
+reset role;
+
+\echo '18. Almacenistas y transportistas no ven costes ni precios'
+select set_config('request.jwt.claims', json_build_object('sub', :'u_kc')::text, false) as _jwt \gset
+set role authenticated;
+do $$ begin
+  perform unit_cost from public.items limit 1;
+  raise exception 'NO debería permitirse';
+exception when others then
+  if sqlerrm like 'NO debería%' then raise; end if;
+  raise notice '   OK rechazado (coste directo): %', sqlerrm;
+end $$;
+do $$ begin
+  perform unit_price from public.purchase_order_lines limit 1;
+  raise exception 'NO debería permitirse';
+exception when others then
+  if sqlerrm like 'NO debería%' then raise; end if;
+  raise notice '   OK rechazado (precio directo): %', sqlerrm;
+end $$;
+do $$ begin
+  assert (select count(*) from public.item_costs('10000000-0000-0000-0000-00000000000a')) = 0, 'almacenista: sin costes';
+  assert (select count(*) from public.po_line_prices('10000000-0000-0000-0000-00000000000a')) = 0, 'almacenista: sin precios';
+  assert (select count(*) from public.v_stock_by_location) > 0, 'almacenista: sí ve el stock';
+  assert (select count(*) from public.items) > 0, 'almacenista: sí ve el catálogo';
+  raise notice '   OK: el almacenista ve stock y catálogo, pero no costes';
+end $$;
+reset role;
+select set_config('request.jwt.claims', json_build_object('sub', :'u_buyer')::text, false) as _jwt \gset
+set role authenticated;
+do $$ begin
+  assert (select count(*) from public.item_costs('10000000-0000-0000-0000-00000000000a')) > 0, 'comprador: ve costes';
+  assert (select count(*) from public.po_line_prices('10000000-0000-0000-0000-00000000000a')) > 0, 'comprador: ve precios';
+  raise notice '   OK: el comprador ve costes y precios';
 end $$;
 reset role;
 \echo ''

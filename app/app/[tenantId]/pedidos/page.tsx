@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getTenantContext, fmtDate, fmtMoney, isLate, PO_STATUS, rows } from '@/lib/app';
+import { COST_ROLES, getLinePrices, getTenantContext, fmtDate, fmtMoney, isLate, PO_STATUS, rows } from '@/lib/app';
 import { Empty, PageHead, Panel, StatusBadge } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 
@@ -12,14 +12,15 @@ export default async function OrdersPage({
 }: { params: Promise<{ tenantId: string }>; searchParams: Promise<{ s?: string }> }) {
   const { tenantId } = await params;
   const { s = 'open' } = await searchParams;
-  const { supabase } = await getTenantContext(tenantId);
+  const { supabase, can } = await getTenantContext(tenantId);
 
   let query = supabase.from('purchase_orders')
-    .select('id, number, status, est_dispatch_date, est_delivery_date, created_at, suppliers(name), warehouses(code, name), purchase_order_lines(qty_ordered, qty_received, unit_price)')
+    .select('id, number, status, est_dispatch_date, est_delivery_date, created_at, suppliers(name), warehouses(code, name), purchase_order_lines(id, qty_ordered, qty_received)')
     .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(300);
   if (s === 'open') query = query.in('status', OPEN);
   else if (s !== 'all') query = query.eq('status', s);
   const orders = rows((await query).data);
+  const prices = await getLinePrices(supabase, tenantId, can(...COST_ROLES), orders.map((o) => o.id));
 
   const tabs: [string, string][] = [['open', 'Abiertas'], ['received', 'Recibidas'], ['cancelled', 'Canceladas'], ['all', 'Todas']];
 
@@ -41,14 +42,14 @@ export default async function OrdersPage({
           <div className="table-scroll">
             <table className="table">
               <thead>
-                <tr><th>Orden</th><th>Proveedor</th><th>Destino</th><th>Estado</th><th className="r">Recibido</th><th className="r">Importe</th><th>Despacho</th><th>Entrega</th></tr>
+                <tr><th>Orden</th><th>Proveedor</th><th>Destino</th><th>Estado</th><th className="r">Recibido</th>{prices && <th className="r">Importe</th>}<th>Despacho</th><th>Entrega</th></tr>
               </thead>
               <tbody>
                 {orders.map((o) => {
                   const lines = o.purchase_order_lines ?? [];
                   const ordered = lines.reduce((a: number, l: any) => a + Number(l.qty_ordered), 0);
                   const received = lines.reduce((a: number, l: any) => a + Number(l.qty_received), 0);
-                  const amount = lines.reduce((a: number, l: any) => a + Number(l.qty_ordered) * Number(l.unit_price), 0);
+                  const amount = lines.reduce((a: number, l: any) => a + Number(l.qty_ordered) * (prices?.get(l.id)?.price ?? 0), 0);
                   const late = OPEN.includes(o.status) && o.status !== 'draft' && isLate(o.est_delivery_date);
                   return (
                     <tr key={o.id}>
@@ -58,7 +59,7 @@ export default async function OrdersPage({
                       <td>{o.warehouses?.code}</td>
                       <td><StatusBadge map={PO_STATUS} value={o.status} /></td>
                       <td className="r">{ordered ? `${Math.round((received / ordered) * 100)} %` : '—'}</td>
-                      <td className="r">{fmtMoney(amount)}</td>
+                      {prices && <td className="r">{fmtMoney(amount)}</td>}
                       <td>{fmtDate(o.est_dispatch_date)}</td>
                       <td>{late ? <span className="badge badge-red">{fmtDate(o.est_delivery_date)}</span> : fmtDate(o.est_delivery_date)}</td>
                     </tr>

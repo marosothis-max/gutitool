@@ -75,3 +75,24 @@ export const isLate = (d: string | null | undefined) => !!d && d < new Date().to
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const rows = (data: unknown): any[] => (Array.isArray(data) ? data : []);
+
+/** Roles que pueden ver costes, valor de stock e importes (la BD lo hace cumplir igualmente). */
+export const COST_ROLES: AppRole[] = ['company_admin', 'supervisor', 'buyer', 'auditor'];
+
+type Sb = Awaited<ReturnType<typeof createClient>>;
+
+/** Coste unitario por artículo, o null si el usuario no puede verlo. */
+export async function getItemCosts(supabase: Sb, tenantId: string, allowed: boolean) {
+  if (!allowed) return null;
+  const { data } = await supabase.rpc('item_costs', { p_tenant_id: tenantId });
+  return new Map<string, number>(rows(data).map((r): [string, number] => [r.item_id, Number(r.unit_cost)]));
+}
+
+/** Precio por línea de pedido (clave: id de línea), o null si el usuario no puede verlo. */
+export async function getLinePrices(supabase: Sb, tenantId: string, allowed: boolean, poIds?: string[]) {
+  if (!allowed) return null;
+  const { data } = await supabase.rpc('po_line_prices', { p_tenant_id: tenantId, p_purchase_order_ids: poIds ?? null });
+  return new Map<string, { poId: string; price: number }>(
+    rows(data).map((r): [string, { poId: string; price: number }] => [r.line_id, { poId: r.purchase_order_id, price: Number(r.unit_price) }]),
+  );
+}
