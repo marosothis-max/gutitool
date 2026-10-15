@@ -1,0 +1,33 @@
+{
+  "name": "gutitool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gestión de inventario industrial multitenant (Next.js + Supabase)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked > lib/database.types.ts",
+    "db:test": "./supabase/tests/run.sh"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.0",
+    "exceljs": "^4.4.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "resend": "^6.0.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "supabase": "^2.40.0",
+    "typescript": "^5.9.0"
+  }
+}
