@@ -26,9 +26,9 @@ export function fromPg(err: PgError): ApiError {
 }
 
 /** Desenvuelve { data, error } de supabase-js lanzando ApiError. */
-export function unwrap<T>(res: { data: T; error: PgError | null }): T {
+export function unwrap<T>(res: { data: T | null; error: PgError | null }): T {
   if (res.error) throw fromPg(res.error);
-  return res.data;
+  return res.data as T;
 }
 
 export async function requireUser() {
@@ -66,7 +66,7 @@ export async function requireSuperAdmin() {
   const ctx = await requireUser();
   const profile = unwrap(
     await ctx.supabase.from('profiles').select('is_super_admin').eq('id', ctx.user.id).single(),
-  );
+  ) as { is_super_admin: boolean };
   if (!profile.is_super_admin) throw new ApiError(403, 'Solo super administradores');
   return ctx;
 }
@@ -95,9 +95,10 @@ export function safeSearch(s: string | null) {
 export function handler<P extends Record<string, string>>(
   fn: (req: Request, params: P) => Promise<Response>,
 ) {
-  return async (req: Request, ctx: { params: Promise<P> }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (req: Request, ctx: { params: Promise<any> }) => {
     try {
-      return await fn(req, await ctx.params);
+      return await fn(req, ((await ctx?.params) ?? {}) as P);
     } catch (e) {
       if (e instanceof ApiError) {
         return NextResponse.json({ error: e.message, details: e.details }, { status: e.status });

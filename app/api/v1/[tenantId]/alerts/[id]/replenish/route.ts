@@ -13,7 +13,7 @@ const Body = z.object({ supplierId: uuid.optional() });
 export const POST = handler<{ tenantId: string; id: string }>(async (req, { tenantId, id }) => {
   const { supabase } = await requireTenant(tenantId);
   const raw = await req.text();
-  const b = raw ? Body.parse(JSON.parse(raw)) : {};
+  const b = Body.parse(raw ? JSON.parse(raw) : {});
   unwrap(await supabase.from('stock_alerts').select('id').eq('tenant_id', tenantId).eq('id', id).single());
   const res = unwrap(await supabase.rpc('create_replenishment_from_alert', {
     p_alert_id: id, p_supplier_id: b.supplierId ?? null,

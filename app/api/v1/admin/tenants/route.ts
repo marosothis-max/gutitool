@@ -35,7 +35,7 @@ export const POST = handler(async (req) => {
   const supabase = createAdminClient();
 
   const tenant = unwrap(await supabase.from('tenants')
-    .insert({ name: b.name, slug: b.slug, tax_id: b.taxId ?? null }).select().single());
+    .insert({ name: b.name, slug: b.slug, tax_id: b.taxId ?? null }).select().single()) as { id: string };
   unwrap(await supabase.from('tenant_settings').insert({ tenant_id: tenant.id, notify_email: b.notifyEmail ?? null }));
   unwrap(await supabase.from('warehouses').insert({
     tenant_id: tenant.id, code: b.centralWarehouse.code, name: b.centralWarehouse.name, level: 'central',

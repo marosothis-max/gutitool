@@ -30,7 +30,7 @@ export const POST = handler<{ tenantId: string; id: string; action: string }>(as
       break;
     case 'dispatch': {
       const raw = await req.text();                       // body opcional
-      const b = raw ? Dispatch.parse(JSON.parse(raw)) : { lines: undefined };
+      const b = Dispatch.parse(raw ? JSON.parse(raw) : {});
       unwrap(await supabase.rpc('dispatch_transfer', {
         p_transfer_id: id,
         p_lines: b.lines?.map((l) => ({ line_id: l.lineId, from_location_id: l.fromLocationId, quantity: l.quantity })) ?? null,

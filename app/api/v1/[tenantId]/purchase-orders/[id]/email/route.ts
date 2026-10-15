@@ -20,11 +20,13 @@ export const POST = handler<{ tenantId: string; id: string }>(async (req, { tena
   const { supabase, user } = await requireTenant(tenantId, ['company_admin', 'supervisor', 'buyer']);
   const b = await parseBody(req, Body);
 
-  const [po, tenant, settings] = await Promise.all([
+  const [po, tenantRes, settingsRes] = await Promise.all([
     loadPurchaseOrder(supabase, tenantId, id),
-    supabase.from('tenants').select('name').eq('id', tenantId).single().then(unwrap),
-    supabase.from('tenant_settings').select('notify_email').eq('tenant_id', tenantId).maybeSingle().then(unwrap),
+    supabase.from('tenants').select('name').eq('id', tenantId).single(),
+    supabase.from('tenant_settings').select('notify_email').eq('tenant_id', tenantId).maybeSingle(),
   ]);
+  const tenant = unwrap(tenantRes) as { name: string };
+  const settings = unwrap(settingsRes) as { notify_email: string | null } | null;
 
   const recipients = new Set<string>(b.to ?? (settings?.notify_email ? [settings.notify_email] : []));
   if (b.includeSupplier && po.suppliers.email) recipients.add(po.suppliers.email);

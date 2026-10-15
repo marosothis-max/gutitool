@@ -29,7 +29,7 @@ export const PATCH = handler<{ tenantId: string; id: string }>(async (req, { ten
   const b = await parseBody(req, Body);
   const current = unwrap(
     await supabase.from('purchase_orders').select('status').eq('tenant_id', tenantId).eq('id', id).single(),
-  );
+  ) as { status: string };
   if (b.status && !(TRANSITIONS[current.status] ?? []).includes(b.status)) {
     throw new ApiError(422, `Transición no permitida: ${current.status} → ${b.status}`);
   }

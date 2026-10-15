@@ -20,10 +20,12 @@ export const GET = handler<{ tenantId: string; kind: string }>(async (req, { ten
     let byLoc = supabase.from('v_stock_by_location').select('*').eq('tenant_id', tenantId)
       .gt('qty_on_hand', 0).order('warehouse_code').order('location_code').limit(MAX_ROWS);
     if (q.get('warehouseId')) byLoc = byLoc.eq('warehouse_id', q.get('warehouseId')!);
-    const [loc, net] = await Promise.all([
-      byLoc.then(unwrap),
-      supabase.from('v_stock_network').select('*').eq('tenant_id', tenantId).order('sku').limit(MAX_ROWS).then(unwrap),
+    const [locRes, netRes] = await Promise.all([
+      byLoc,
+      supabase.from('v_stock_network').select('*').eq('tenant_id', tenantId).order('sku').limit(MAX_ROWS),
     ]);
+    const loc = unwrap(locRes) as any[];
+    const net = unwrap(netRes) as any[];
     const buf = await buildWorkbook([
       {
         name: 'Stock por ubicación',
