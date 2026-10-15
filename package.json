@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > lib/database.types.ts",
-    "db:test": "./supabase/tests/run.sh"
+    "db:test": "./supabase/tests/run.sh",
+    "superadmin": "node scripts/create-superadmin.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

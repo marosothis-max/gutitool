@@ -16,9 +16,9 @@
   --ink: #17222c;
   --graphite: #131d26;
   --graphite-2: #1c2834;
-  --cobalt: #2148c0;
-  --cobalt-dark: #18379a;
-  --cobalt-tint: #e6ecfb;
+  --cobalt: #c2410c;        /* acción principal (naranja fundido, AA con blanco) */
+  --cobalt-dark: #9a3412;
+  --cobalt-tint: #fff1e8;
   --signal: #f2b705;
   --signal-tint: #fff5d1;
   --ok: #1f8a5b;
@@ -30,8 +30,8 @@
 
   --radius-s: 4px;
   --radius-m: 8px;
-  --font: var(--font-archivo), "Archivo", system-ui, sans-serif;
-  --focus: 0 0 0 3px rgba(33, 72, 192, 0.35);
+  --font: var(--font-sans), "Saira", system-ui, sans-serif;
+  --focus: 0 0 0 3px rgba(194, 65, 12, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -278,9 +278,9 @@ img, svg { display: block; }
    ===================================================================== */
 .auth { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
 @media (max-width: 860px) { .auth { grid-template-columns: 1fr; } .auth-side { display: none; } }
-.auth-side { background: var(--graphite); color: #fff; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
+.auth-side { background-color: #050506; background-image: radial-gradient(70% 60% at 100% 100%, rgba(255,91,20,.28), transparent 70%), repeating-linear-gradient(45deg, rgba(255,255,255,.028) 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, rgba(255,255,255,.028) 0 1px, transparent 1px 7px); color: #fff; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
 .auth-side .brand { color: #fff; }
-.auth-side h2 { font-size: 34px; line-height: 1.1; font-weight: 800; font-variation-settings: "wdth" 120; margin: 0 0 12px; max-width: 14em; }
+.auth-side h2 { font-size: 52px; line-height: .95; font-weight: 800; font-variation-settings: "wdth" 72; text-transform: uppercase; margin: 0 0 14px; max-width: 12em; }
 .auth-side p { color: #b9c4ce; max-width: 30em; margin: 0; }
 .auth-main { display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: var(--steel-50); }
 .auth-card { width: 100%; max-width: 400px; }
@@ -304,7 +304,7 @@ img, svg { display: block; }
    ===================================================================== */
 .shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; background: var(--steel-50); }
 .sidebar {
-  background: var(--graphite); color: #c9d3dc; position: sticky; top: 0; height: 100vh;
+  background: #07080a; color: #c9d3dc; position: sticky; top: 0; height: 100vh;
   display: flex; flex-direction: column; padding: 18px 12px;
 }
 .sidebar .brand { color: #fff; padding: 4px 10px 18px; }
@@ -402,3 +402,19 @@ img, svg { display: block; }
 .status-msg { font-size: 13px; }
 .status-msg.ok { color: var(--ok); }
 .status-msg.err { color: var(--danger); }
+
+/* Uso del plan y casillas */
+.usage { height: 8px; background: var(--steel-100); border-radius: 4px; overflow: hidden; margin: -10px 0 22px; max-width: 520px; }
+.usage-bar { height: 100%; background: var(--cobalt); border-radius: 4px; }
+.usage-bar.is-full { background: var(--hazard); }
+.checks { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 6px; }
+.checks legend { font-size: 14px; font-weight: 600; margin-bottom: 6px; padding: 0; }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--steel-200); border-radius: var(--radius-s); cursor: pointer; font-size: 15px; background: var(--paper); }
+.check:has(input:checked) { border-color: var(--cobalt); background: var(--cobalt-tint); }
+.check input { margin-top: 4px; accent-color: var(--cobalt); }
+.check small { display: block; color: var(--steel-600); font-size: 13px; }
+
+/* Titulares de la app con el rótulo industrial */
+.page-head h1 { font-variation-settings: "wdth" 80; text-transform: uppercase; letter-spacing: 0; font-size: 32px; }
+.auth-card h1 { font-variation-settings: "wdth" 80; text-transform: uppercase; font-size: 34px; }
+.brand { font-variation-settings: "wdth" 80; text-transform: uppercase; font-size: 22px; }

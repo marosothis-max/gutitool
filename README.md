@@ -12,6 +12,7 @@ supabase/
     20261015000001_core_schema.sql      tablas, tipos, integridad multitenant
     20261015000002_logic.sql            triggers (ledger, alertas, correlativos) y RPC de negocio
     20261015000003_security_views.sql   RLS, permisos, vistas, Realtime
+    20261015000004_plans_user_limits.sql planes y límite de usuarios por empresa
   tests/                                pruebas end-to-end en PostgreSQL local
 app/api/v1/                             API REST (route handlers)
 lib/                                    clientes Supabase, utilidades API, Excel, correo
@@ -39,17 +40,25 @@ npx supabase link --project-ref rxnwqtnvrikizklrgmev
 npx supabase db push
 ```
 
-O bien, pega los tres archivos de `supabase/migrations/` **en orden** en el SQL Editor del panel de Supabase.
+O bien, pega los archivos de `supabase/migrations/` **en orden** en el SQL Editor del panel de Supabase.
 
-### 3. Primer super administrador
+### 3. Crear la cuenta de Super Administrador
 
-Regístrate en la app (o crea el usuario en Authentication → Users) y ejecuta en el SQL Editor:
+Con las migraciones aplicadas y `.env.local` relleno (incluida `SUPABASE_SECRET_KEY`):
 
-```sql
-update public.profiles set is_super_admin = true where email = 'tu@email.com';
+```bash
+npm install
+npm run superadmin -- tu@correo.com "UnaContraseñaSegura" "Tu Nombre"
 ```
 
-Desde ahí, `POST /api/v1/admin/tenants` crea empresas e invita a su administrador.
+Entra en `/login` con ese correo y contraseña: irás al panel **Empresas**, desde donde:
+
+- creas cada empresa con su **plan** y su **límite de usuarios**,
+- le das de alta su **Administrador de Empresa** (con contraseña temporal o invitación por correo),
+- suspendes o reactivas empresas y amplías su plan.
+
+Cada Administrador de Empresa gestiona su equipo en **Usuarios** (supervisores, auditores, compradores,
+transportistas y almacenistas). La base de datos impide superar el límite del plan.
 
 ### 4. Correo
 

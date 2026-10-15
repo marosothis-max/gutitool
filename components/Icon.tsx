@@ -37,10 +37,10 @@ export function Icon({ name, size = 18, className }: { name: string; size?: numb
 export function BrandMark({ className = 'brand-mark' }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect x="2" y="2" width="28" height="28" rx="5" fill="#2148C0" />
-      <rect x="7" y="9" width="18" height="14" rx="1.5" fill="none" stroke="#fff" strokeWidth="2.2" />
-      <path d="M7 15h18" stroke="#fff" strokeWidth="2.2" />
-      <rect x="7" y="23.5" width="18" height="2.5" fill="#F2B705" />
+      <rect x="1" y="1" width="30" height="30" rx="6" fill="#FF5B14" />
+      <rect x="7" y="8" width="18" height="14" rx="1.5" fill="none" stroke="#120600" strokeWidth="2.6" />
+      <path d="M7 15h18" stroke="#120600" strokeWidth="2.6" />
+      <path d="M7 25.5h18" stroke="#120600" strokeWidth="2.6" strokeDasharray="3 2" />
     </svg>
   );
 }

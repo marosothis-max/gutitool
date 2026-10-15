@@ -8,9 +8,9 @@ import { BrandMark, Icon } from './Icon';
 type Item = { href: string; label: string; icon: string; badge?: number };
 
 export function Shell({
-  tenantId, tenantName, roleLabel, email, alerts, isSuperAdmin, children,
+  tenantId, tenantName, roleLabel, email, alerts, isSuperAdmin, canSeeUsers, children,
 }: {
-  tenantId: string; tenantName: string; roleLabel: string; email: string; alerts: number; isSuperAdmin: boolean; children: ReactNode;
+  tenantId: string; tenantName: string; roleLabel: string; email: string; alerts: number; isSuperAdmin: boolean; canSeeUsers: boolean; children: ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -30,6 +30,7 @@ export function Shell({
       { href: `${base}/devoluciones`, label: 'Devoluciones', icon: 'returns' },
       { href: `${base}/herramientas`, label: 'Herramientas', icon: 'tools' },
     ] },
+    ...(canSeeUsers ? [{ title: 'Empresa', items: [{ href: `${base}/usuarios`, label: 'Usuarios', icon: 'users' }] }] : []),
   ];
 
   async function signOut() {

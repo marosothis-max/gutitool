@@ -236,6 +236,36 @@ do $$ begin assert (select count(*) from public.items) = 0, 'empresa suspendida 
 reset role;
 update public.tenants set status = 'active' where id = :'t_a';
 
+
+\echo '16. Límite de usuarios por plan'
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-000000000016','u16@acme.es'), ('00000000-0000-0000-0000-000000000017','u17@acme.es');
+select set_config('request.jwt.claims', json_build_object('sub', :'u_super')::text, false) as _jwt \gset
+set role authenticated;
+update public.tenants set plan = 'profesional', max_users = 6 where id = :'t_a';   -- Acme tiene 5 usuarios
+reset role;
+select set_config('request.jwt.claims', json_build_object('sub', :'u_admin')::text, false) as _jwt \gset
+set role authenticated;
+update public.tenants set max_users = 999 where id = :'t_a';   -- RLS: no afecta a ninguna fila
+do $$ begin
+  assert (select max_users from public.tenants where id = '10000000-0000-0000-0000-00000000000a') = 6,
+         'el admin de empresa no debe poder ampliar su plan';
+  raise notice '   OK: el admin de empresa no puede ampliar su propio plan';
+end $$;
+insert into public.tenant_members (tenant_id, user_id, role) values (:'t_a', '00000000-0000-0000-0000-000000000016', 'supervisor');
+\echo '   Usuario 6 de 6 dado de alta'
+insert into public.tenant_members (tenant_id, user_id, role) values (:'t_a', '00000000-0000-0000-0000-000000000016', 'carrier');
+\echo '   Segundo rol para el mismo usuario: no consume plaza'
+do $$ begin
+  insert into public.tenant_members (tenant_id, user_id, role)
+  values ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000017', 'buyer');
+  raise exception 'NO debería permitirse';
+exception when others then
+  if sqlerrm like 'NO debería%' then raise; end if;
+  raise notice '   OK rechazado (usuario 7): %', sqlerrm;
+end $$;
+do $$ begin assert public.tenant_active_users('10000000-0000-0000-0000-00000000000a') = 6, 'deben quedar 6 usuarios'; end $$;
+reset role;
 \echo ''
 \echo '=== Visión del Central sobre la red ==='
 \pset format aligned

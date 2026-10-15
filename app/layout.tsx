@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { Archivo } from 'next/font/google';
+import { Saira } from 'next/font/google';
 import './globals.css';
 
-// Archivo con eje de anchura: ancha para titulares, estrecha para datos.
-const archivo = Archivo({
+// Saira con eje de anchura: estrecha y gruesa para rótulos industriales, normal para texto.
+const saira = Saira({
   subsets: ['latin'],
   axes: ['wdth'],
-  variable: '--font-archivo',
+  variable: '--font-sans',
   display: 'swap',
 });
 
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
     'Control de stock para almacén central, intermedios y obras: ubicación exacta por bin, herramientas asignadas, alertas de mínimo, compras, devoluciones y trazabilidad.',
 };
 
-export const viewport: Viewport = { themeColor: '#131d26' };
+export const viewport: Viewport = { themeColor: '#050506' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={archivo.variable}>
+    <html lang="es" className={saira.variable}>
       <body>{children}</body>
     </html>
   );
