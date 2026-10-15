@@ -20,6 +20,8 @@ export default async function TenantLayout({
       alerts={count ?? 0}
       isSuperAdmin={!!profile?.is_super_admin}
       canSeeUsers={can('company_admin', 'supervisor', 'auditor')}
+      canConfigure={can('company_admin', 'supervisor', 'buyer', 'auditor')}
+      canImport={can('company_admin', 'supervisor')}
     >
       {children}
     </Shell>

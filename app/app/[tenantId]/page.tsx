@@ -43,8 +43,10 @@ export default async function Dashboard({ params }: { params: Promise<{ tenantId
 
       {isNew && (
         <div className="notice">
-          Para empezar: crea tus almacenes intermedios y finales, sus ubicaciones y tu catálogo de artículos. Después
-          podrás registrar la primera recepción. Tienes los pasos en el README del proyecto.
+          <strong>Para empezar:</strong> 1) crea tus almacenes y genera sus ubicaciones en{' '}
+          <Link href={`/app/${t}/almacenes`}>Almacenes y ubicaciones</Link>; 2) carga artículos y stock de una vez en{' '}
+          <Link href={`/app/${t}/importar`}>Carga desde Excel</Link>; 3) a partir de ahí, el material nuevo entra por{' '}
+          <Link href={`/app/${t}/entradas`}>Entradas de material</Link>.
         </div>
       )}
 

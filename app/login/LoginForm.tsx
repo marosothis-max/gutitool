@@ -1,6 +1,5 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup' | 'reset';
@@ -18,7 +17,6 @@ const ERRORS: Record<string, string> = {
 };
 
 export function LoginForm({ next }: { next: string }) {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,33 +28,45 @@ export function LoginForm({ next }: { next: string }) {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true); setError(''); setInfo('');
-    const supabase = createClient();
-    const callback = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    // Si algo no responde en 20 s, se informa en lugar de dejar el botón colgado
+    const timer = setTimeout(() => {
+      setBusy(false);
+      setError('El servidor no responde. Revisa tu conexión o la configuración de Supabase (URL y clave pública en Vercel).');
+    }, 20000);
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+        throw new Error('Falta configurar NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY en Vercel (y volver a desplegar).');
+      }
+      const supabase = createClient();
+      const callback = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
       if (mode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        router.replace(next);
-        router.refresh();
+        clearTimeout(timer);
+        setInfo('Sesión iniciada, entrando…');
+        window.location.assign(next); // navegación completa: el servidor ya ve la cookie de sesión
         return;
       }
       if (mode === 'signup') {
         const { data, error } = await supabase.auth.signUp({
-          email, password, options: { data: { full_name: fullName }, emailRedirectTo: callback },
+          email: email.trim(), password, options: { data: { full_name: fullName }, emailRedirectTo: callback },
         });
         if (error) throw error;
-        if (data.session) { router.replace(next); router.refresh(); return; }
+        if (data.session) { clearTimeout(timer); window.location.assign(next); return; }
         setInfo('Cuenta creada. Revisa tu correo y pulsa el enlace de confirmación para entrar.');
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: callback });
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: callback });
         if (error) throw error;
         setInfo('Si el correo existe, recibirás un enlace en unos minutos.');
       }
+      setBusy(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[login]', err);
       setError(ERRORS[msg] ?? msg);
-    } finally {
       setBusy(false);
+    } finally {
+      clearTimeout(timer);
     }
   }
 

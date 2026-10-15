@@ -8,9 +8,10 @@ import { BrandMark, Icon } from './Icon';
 type Item = { href: string; label: string; icon: string; badge?: number };
 
 export function Shell({
-  tenantId, tenantName, roleLabel, email, alerts, isSuperAdmin, canSeeUsers, children,
+  tenantId, tenantName, roleLabel, email, alerts, isSuperAdmin, canSeeUsers, canConfigure = false, canImport = false, children,
 }: {
-  tenantId: string; tenantName: string; roleLabel: string; email: string; alerts: number; isSuperAdmin: boolean; canSeeUsers: boolean; children: ReactNode;
+  tenantId: string; tenantName: string; roleLabel: string; email: string; alerts: number; isSuperAdmin: boolean;
+  canSeeUsers: boolean; canConfigure?: boolean; canImport?: boolean; children: ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -25,11 +26,18 @@ export function Shell({
       { href: `${base}/movimientos`, label: 'Movimientos', icon: 'movements' },
     ] },
     { title: 'Logística', items: [
+      { href: `${base}/entradas`, label: 'Entradas de material', icon: 'receipt' },
       { href: `${base}/pedidos`, label: 'Órdenes de compra', icon: 'orders' },
       { href: `${base}/traslados`, label: 'Traslados', icon: 'transfer' },
       { href: `${base}/devoluciones`, label: 'Devoluciones', icon: 'returns' },
       { href: `${base}/herramientas`, label: 'Herramientas', icon: 'tools' },
     ] },
+    ...(canConfigure ? [{ title: 'Configuración', items: [
+      { href: `${base}/almacenes`, label: 'Almacenes y ubicaciones', icon: 'building' },
+      { href: `${base}/articulos`, label: 'Artículos y mínimos', icon: 'stock' },
+      { href: `${base}/proveedores`, label: 'Proveedores', icon: 'users' },
+      ...(canImport ? [{ href: `${base}/importar`, label: 'Carga desde Excel', icon: 'download' }] : []),
+    ] }] : []),
     ...(canSeeUsers ? [{ title: 'Empresa', items: [{ href: `${base}/usuarios`, label: 'Usuarios', icon: 'users' }] }] : []),
   ];
 

@@ -266,6 +266,43 @@ exception when others then
 end $$;
 do $$ begin assert public.tenant_active_users('10000000-0000-0000-0000-00000000000a') = 6, 'deben quedar 6 usuarios'; end $$;
 reset role;
+
+\echo '17. Carga inicial desde Excel (crea artículos y ubicaciones que falten)'
+select set_config('request.jwt.claims', json_build_object('sub', :'u_admin')::text, false) as _jwt \gset
+set role authenticated;
+select public.import_initial_stock(:'t_a', '[
+  {"sku":"EPI-GNT-09","warehouse_code":"cen","location_code":"P01-E03-B12","quantity":"100"},
+  {"sku":"MEC-BRD-050","name":"Brida acero DN50","item_type":"consumible","uom":"UD","unit_cost":"12,50","warehouse_code":"INT-N","location_code":"p02-e01-b05","quantity":"40","min_qty":"10","reorder_qty":"30"},
+  {"sku":"HER-AMO-01","name":"Amoladora 125","item_type":"herramienta","warehouse_code":"CEN","location_code":"P09-E01-B01","quantity":"2"}
+]'::jsonb) as res \gset
+\echo '   ' :res
+do $$ begin
+  assert (select item_type from public.items where sku = 'HER-AMO-01') = 'tool', 'debe crear herramienta';
+  assert (select unit_cost from public.items where sku = 'MEC-BRD-050') = 12.5, 'coste con coma decimal';
+  assert exists (select 1 from public.locations where code = 'P02-E01-B05'), 'debe crear ubicación en mayúsculas';
+  assert (select sum(qty_on_hand) from public.stock_levels s join public.items i on i.id = s.item_id
+           where i.sku = 'EPI-GNT-09' and s.warehouse_id = '20000000-0000-0000-0000-0000000000c0') = 280, 'central guantes 180+100';
+end $$;
+do $$ begin
+  perform public.import_initial_stock('10000000-0000-0000-0000-00000000000a',
+    '[{"sku":"NUEVO-1","warehouse_code":"CEN","location_code":"P01-E01-B01","quantity":"5"}]');
+  raise exception 'NO debería permitirse';
+exception when others then
+  if sqlerrm like 'NO debería%' then raise; end if;
+  raise notice '   OK rechazado: %', sqlerrm;
+end $$;
+reset role;
+select set_config('request.jwt.claims', json_build_object('sub', :'u_kc')::text, false) as _jwt \gset
+set role authenticated;
+do $$ begin
+  perform public.import_initial_stock('10000000-0000-0000-0000-00000000000a',
+    '[{"sku":"EPI-GNT-09","warehouse_code":"CEN","location_code":"P01-E03-B12","quantity":"5"}]');
+  raise exception 'NO debería permitirse';
+exception when others then
+  if sqlerrm like 'NO debería%' then raise; end if;
+  raise notice '   OK rechazado (almacenista): %', sqlerrm;
+end $$;
+reset role;
 \echo ''
 \echo '=== Visión del Central sobre la red ==='
 \pset format aligned
