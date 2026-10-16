@@ -294,6 +294,21 @@
 .lx-foot { border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .lx-foot .lx-wrap { display: flex; justify-content: space-between; gap: 16px; padding-top: 26px; padding-bottom: 26px; flex-wrap: wrap; }
 
+/* Contacto */
+.lx-contact { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 0 0 26px; }
+.lx-contact-card {
+  display: inline-flex; align-items: center; gap: 14px; text-align: left; text-decoration: none;
+  padding: 16px 22px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.lx-contact-card:hover { border-color: var(--molten); background: rgba(255,91,20,.08); }
+.lx-contact-ic { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--molten); color: #120600; }
+.lx-contact-card small { display: block; color: var(--muted); font-size: 13px; }
+.lx-contact-card b { font-size: 18px; color: #fff; }
+.lx-foot-links { display: inline-flex; gap: 18px; flex-wrap: wrap; }
+.lx-foot-links a { color: var(--muted); text-decoration: none; }
+.lx-foot-links a:hover { color: #fff; }
+
 @media (prefers-reduced-motion: reduce) {
   .lx *, .lx *::before, .lx *::after { animation: none !important; transition: none !important; }
   .lx-reveal { opacity: 1; transform: none; }

@@ -4,6 +4,9 @@ import './landing.css';
 import { Icon } from '@/components/Icon';
 import { LiveKpis, LiveNetwork, RevealOnScroll } from '@/components/landing/Motion';
 
+const EMAIL = 'gutitool26@gmail.com';
+const INSTAGRAM = 'gutitool';
+
 export const metadata = { title: 'Inventario industrial para petróleo, metalurgia y minería' };
 
 const TAPE = [
@@ -41,6 +44,7 @@ export default function Landing() {
             <a className="l" href="#funciones">Funciones</a>
             <a className="l" href="#sectores">Sectores</a>
             <a className="l" href="#seguridad">Seguridad</a>
+            <a className="l" href="#contacto">Contacto</a>
             <Link className="lx-btn lx-btn-hot lx-btn-sm" href="/login">Iniciar sesión</Link>
           </nav>
         </div>
@@ -252,14 +256,24 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ---------- Cierre ---------- */}
-        <section className="lx-cta lx-mesh">
+        {/* ---------- Cierre y contacto ---------- */}
+        <section className="lx-cta lx-mesh" id="contacto">
           <div className="lx-wrap">
             <h2 className="lx-display lx-reveal">¿Ponemos tu almacén <span className="hot">en marcha?</span></h2>
-            <p className="lx-reveal">Damos de alta tu empresa, cargamos almacenes y ubicaciones y tu equipo empieza a registrar movimientos esta semana.</p>
+            <p className="lx-reveal">Escríbenos y te preparamos una demo con tus propios almacenes. Damos de alta tu empresa y tu equipo empieza a registrar movimientos esta semana.</p>
+            <div className="lx-contact lx-reveal">
+              <a className="lx-contact-card" href={`mailto:${EMAIL}?subject=${encodeURIComponent('Demo de Gutitool')}`}>
+                <span className="lx-contact-ic"><Icon name="mail" size={24} /></span>
+                <span><small>Correo</small><b>{EMAIL}</b></span>
+              </a>
+              <a className="lx-contact-card" href={`https://instagram.com/${INSTAGRAM}`} target="_blank" rel="noopener noreferrer">
+                <span className="lx-contact-ic"><InstagramIcon /></span>
+                <span><small>Instagram</small><b>@{INSTAGRAM}</b></span>
+              </a>
+            </div>
             <div className="lx-actions lx-reveal">
-              <Link className="lx-btn lx-btn-hot" href="/login">Iniciar sesión</Link>
-              <a className="lx-btn lx-btn-line" href="#funciones">Ver funciones</a>
+              <a className="lx-btn lx-btn-hot" href={`mailto:${EMAIL}?subject=${encodeURIComponent('Demo de Gutitool')}`}>Pedir una demo</a>
+              <Link className="lx-btn lx-btn-line" href="/login">Iniciar sesión</Link>
             </div>
           </div>
         </section>
@@ -268,7 +282,12 @@ export default function Landing() {
       <footer className="lx-foot">
         <div className="lx-wrap">
           <span>Gutitool, inventario industrial multialmacén</span>
-          <span>© {new Date().getFullYear()}</span>
+          <span className="lx-foot-links">
+            <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            <a href={`https://instagram.com/${INSTAGRAM}`} target="_blank" rel="noopener noreferrer">Instagram @{INSTAGRAM}</a>
+            <a href="/guia.html">Guía de uso</a>
+            <span>© {new Date().getFullYear()}</span>
+          </span>
         </div>
       </footer>
     </div>
@@ -306,4 +325,14 @@ function Ladle() {
 }
 function MineCart() {
   return <svg viewBox="0 0 100 100"><path {...S} d="M12 36h76l-8 32H20zM8 88h84M30 78a7 7 0 100 .1M70 78a7 7 0 100 .1M30 36l8-14 12 8 10-12 10 18" /></svg>;
+}
+
+function InstagramIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+    </svg>
+  );
 }
